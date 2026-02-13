@@ -1,31 +1,24 @@
 # AWS EC2 Provisioning Guide
 
-This guide provides a step-by-step process for launching and connecting to an Ubuntu EC2 instance using the AWS CLI.
+Deploy an Ubuntu 24.04 EC2 instance using the CloudFormation template (`ec2.yml`).
 
 ## Prerequisites
 
 Set your target region:
 
 ```bash
-# Define your target AWS region
 export AWS_REGION="eu-central-1"
 ```
 
 ---
 
-## 1. Manage Key Pairs
-
-Check your existing key pairs:
+## 1. Create Key Pair
 
 ```bash
-# List names of all key pairs in the current region
+# List existing key pairs
 aws ec2 describe-key-pairs --region $AWS_REGION --query 'KeyPairs[*].KeyName' --output table
-```
 
-Create a new SSH key pair:
-
-```bash
-# Create a new key pair and save the private key to a .pem file
+# Create a new key pair (skip if ec2-key already exists)
 aws ec2 create-key-pair \
   --key-name ec2-key \
   --key-type ed25519 \
@@ -33,91 +26,89 @@ aws ec2 create-key-pair \
   --query 'KeyMaterial' \
   --output text > ec2-key.pem
 
-# Set secure permissions (required for SSH)
 chmod 400 ec2-key.pem
 ```
 
 ---
 
-## 2. Identify Latest AMI
-
-Find the latest Amazon Linux 2023 AMI ID:
+## 2. Download CloudFormation Templates
 
 ```bash
-# Query the official Amazon owners for the newest AL2023 image
-AMI_ID=$(aws ec2 describe-images \
-  --region $AWS_REGION \
-  --owners 099720109477 \
-  --filters "Name=name,Values=ubuntu/images/hvm-ssd-gp3/ubuntu-noble-24.04-amd64-server-*" "Name=state,Values=available" \
-  --query 'Images | sort_by(@, &CreationDate) | [-1].ImageId' \
-  --output text)
+curl -H "Authorization: token $PAT_TOKEN" \
+  -H "Accept: application/vnd.github.raw" \
+  -o vpc.yml \
+  https://api.github.com/repos/skrradev/openclaw-infra-config/contents/vpc.yml
 
-echo "Selected AMI ID: $AMI_ID"
+curl -H "Authorization: token $PAT_TOKEN" \
+  -H "Accept: application/vnd.github.raw" \
+  -o ec2.yml \
+  https://api.github.com/repos/skrradev/openclaw-infra-config/contents/ec2.yml
 ```
 
 ---
 
-## 3. Configure Security Group
-
-Create a security group for SSH access:
+## 3. Deploy VPC Stack
 
 ```bash
-# Create the security group
-SG_ID=$(aws ec2 create-security-group \
-  --group-name ec2-sg \
-  --description "SSH access group" \
-  --region $AWS_REGION \
-  --query 'GroupId' \
-  --output text)
-
-# Authorize ingress traffic for SSH (Port 22)
-aws ec2 authorize-security-group-ingress \
-  --group-id $SG_ID \
-  --protocol tcp \
-  --port 22 \
-  --cidr 0.0.0.0/0 \
+aws cloudformation deploy \
+  --template-file vpc.yml \
+  --stack-name fastclaws-vpc \
   --region $AWS_REGION
 ```
 
 ---
 
-## 4. Launch EC2 Instance
+## 4. Deploy EC2 Stack
 
-Provision the instance using the variables obtained above:
+With defaults (ec2-key, t3.medium, 8GB):
 
 ```bash
-# Run the instance with a t3.medium type and 8GB EBS volume
-INSTANCE_ID=$(aws ec2 run-instances \
-  --region $AWS_REGION \
-  --image-id $AMI_ID \
-  --instance-type t3.medium \
-  --key-name ec2-key \
-  --security-group-ids $SG_ID \
-  --block-device-mappings '[{"DeviceName":"/dev/xvda","Ebs":{"VolumeSize":8,"VolumeType":"gp3"}}]' \
-  --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=my-server}]' \
-  --query 'Instances[0].InstanceId' \
-  --output text)
+aws cloudformation deploy \
+  --template-file ec2.yml \
+  --stack-name my-server \
+  --region $AWS_REGION
+```
 
-echo "Launched Instance ID: $INSTANCE_ID"
+With custom parameters:
+
+```bash
+aws cloudformation deploy \
+  --template-file ec2.yml \
+  --stack-name my-server \
+  --region $AWS_REGION \
+  --parameter-overrides \
+    KeyName=my-other-key \
+    InstanceType=t3.large \
+    VolumeSize=20 \
+    InstanceName=dev-server
 ```
 
 ---
 
-## 5. Connect via SSH
-
-Wait for the instance to be ready and get its public IP:
+## 5. Get Outputs
 
 ```bash
-# Wait until the instance reaches the 'running' state
-aws ec2 wait instance-running --instance-ids $INSTANCE_ID --region $AWS_REGION
-
-# Retrieve the public IP address
-PUBLIC_IP=$(aws ec2 describe-instances \
+# Show instance ID, public IP, and SSH command
+aws cloudformation describe-stacks \
+  --stack-name my-server \
   --region $AWS_REGION \
-  --instance-ids $INSTANCE_ID \
-  --query 'Reservations[0].Instances[0].PublicIpAddress' \
-  --output text)
+  --query 'Stacks[0].Outputs' \
+  --output table
+```
 
-# Connect to the instance
-ssh -i ec2-key.pem ec2-user@$PUBLIC_IP
+---
+
+## 6. Connect via SSH
+
+```bash
+ssh -i ec2-key.pem ubuntu@<PublicIP>
+```
+
+---
+
+## 7. Tear Down
+
+```bash
+aws cloudformation delete-stack --stack-name my-server --region $AWS_REGION
+aws cloudformation delete-stack --stack-name fastclaws-vpc --region $AWS_REGION
 ```
