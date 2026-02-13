@@ -31,14 +31,9 @@ chmod 400 ec2-key.pem
 
 ---
 
-## 2. Download CloudFormation Templates
+## 2. Download CloudFormation Template
 
 ```bash
-curl -H "Authorization: token $PAT_TOKEN" \
-  -H "Accept: application/vnd.github.raw" \
-  -o vpc.yml \
-  https://api.github.com/repos/skrradev/openclaw-infra-config/contents/vpc.yml
-
 curl -H "Authorization: token $PAT_TOKEN" \
   -H "Accept: application/vnd.github.raw" \
   -o ec2.yml \
@@ -47,18 +42,7 @@ curl -H "Authorization: token $PAT_TOKEN" \
 
 ---
 
-## 3. Deploy VPC Stack
-
-```bash
-aws cloudformation deploy \
-  --template-file vpc.yml \
-  --stack-name fastclaws-vpc \
-  --region $AWS_REGION
-```
-
----
-
-## 4. Deploy EC2 Stack
+## 3. Deploy EC2 Stack
 
 With defaults (ec2-key, t3.medium, 8GB):
 
@@ -85,7 +69,7 @@ aws cloudformation deploy \
 
 ---
 
-## 5. Get Outputs
+## 4. Get Outputs
 
 ```bash
 # Show instance ID, public IP, and SSH command
@@ -98,7 +82,7 @@ aws cloudformation describe-stacks \
 
 ---
 
-## 6. Connect via SSH
+## 5. Connect via SSH
 
 ```bash
 ssh -i ec2-key.pem ubuntu@<PublicIP>
@@ -106,9 +90,8 @@ ssh -i ec2-key.pem ubuntu@<PublicIP>
 
 ---
 
-## 7. Tear Down
+## 6. Tear Down
 
 ```bash
 aws cloudformation delete-stack --stack-name my-server --region $AWS_REGION
-aws cloudformation delete-stack --stack-name fastclaws-vpc --region $AWS_REGION
 ```
