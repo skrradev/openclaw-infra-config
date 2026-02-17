@@ -12,18 +12,11 @@ export AWS_REGION="eu-central-1"
 
 ---
 
-## 1. Download CloudFormation Templates
+## 1. Clone Infrastructure Repo
 
 ```bash
-curl -H "Authorization: token $PAT_TOKEN" \
-  -H "Accept: application/vnd.github.raw" \
-  -o vpc.yml \
-  https://api.github.com/repos/skrradev/openclaw-infra-config/contents/vpc.yml
-
-curl -H "Authorization: token $PAT_TOKEN" \
-  -H "Accept: application/vnd.github.raw" \
-  -o ec2-protected.yml \
-  https://api.github.com/repos/skrradev/openclaw-infra-config/contents/ec2-protected.yml
+git clone https://github.com/skrradev/openclaw-infra-config.git
+cd openclaw-infra-config
 ```
 
 ---

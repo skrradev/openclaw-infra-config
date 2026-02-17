@@ -31,13 +31,11 @@ chmod 400 ec2-key.pem
 
 ---
 
-## 2. Download CloudFormation Template
+## 2. Clone Infrastructure Repo
 
 ```bash
-curl -H "Authorization: token $PAT_TOKEN" \
-  -H "Accept: application/vnd.github.raw" \
-  -o ec2.yml \
-  https://api.github.com/repos/skrradev/openclaw-infra-config/contents/ec2.yml
+git clone https://github.com/skrradev/openclaw-infra-config.git
+cd openclaw-infra-config
 ```
 
 ---
