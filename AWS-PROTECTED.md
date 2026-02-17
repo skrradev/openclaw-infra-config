@@ -37,6 +37,16 @@ aws cloudformation deploy \
   --region $AWS_REGION
 ```
 
+With direct Tailscale peer-to-peer (opens inbound UDP 41641):
+
+```bash
+aws cloudformation deploy \
+  --template-file vpc.yml \
+  --stack-name fastclaws-vpc \
+  --region $AWS_REGION \
+  --parameter-overrides EnableTailscaleDirect=true
+```
+
 ---
 
 ## 3. Deploy EC2 Stack

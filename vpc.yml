@@ -12,6 +12,15 @@ Parameters:
     Default: 10.42.10.0/24
     Description: CIDR block for the egress subnet
 
+  EnableTailscaleDirect:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+    Description: Enable inbound UDP 41641 for direct Tailscale peer-to-peer connections
+
+Conditions:
+  TailscaleDirect: !Equals [!Ref EnableTailscaleDirect, 'true']
+
 Resources:
   VPC:
     Type: AWS::EC2::VPC
@@ -91,6 +100,17 @@ Resources:
           Value: fastclaws-instance-sg
         - Key: Project
           Value: fastclaws
+
+  TailscaleIngressRule:
+    Type: AWS::EC2::SecurityGroupIngress
+    Condition: TailscaleDirect
+    Properties:
+      GroupId: !GetAtt InstanceSecurityGroup.GroupId
+      IpProtocol: udp
+      FromPort: 41641
+      ToPort: 41641
+      CidrIp: 0.0.0.0/0
+      Description: Tailscale direct peer-to-peer (WireGuard)
 
   EgressSubnetNacl:
     Type: AWS::EC2::NetworkAcl
