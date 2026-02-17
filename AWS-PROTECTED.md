@@ -2,6 +2,8 @@
 
 Deploy an Ubuntu 24.04 EC2 instance into a dedicated VPC with egress-only networking and restrictive NACLs.
 
+> **For enterprise/production use** with private subnets and NAT Gateway, see [AWS-ENTERPRISE.md](AWS-ENTERPRISE.md).
+
 ## Prerequisites
 
 Set your target region:
@@ -54,7 +56,7 @@ SG_ID=$(aws cloudformation describe-stacks --stack-name fastclaws-vpc --region $
 
 aws cloudformation deploy \
   --template-file ec2-protected.yml \
-  --stack-name my-server \
+  --stack-name openclaw-server \
   --region $AWS_REGION \
   --capabilities CAPABILITY_NAMED_IAM \
   --parameter-overrides \

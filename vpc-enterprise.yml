@@ -1,0 +1,291 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Enterprise VPC with private subnet, NAT Gateway, and restrictive NACLs
+
+Parameters:
+  VpcCidr:
+    Type: String
+    Default: 10.43.0.0/16
+    Description: CIDR block for the VPC
+
+  PublicSubnetCidr:
+    Type: String
+    Default: 10.43.10.0/24
+    Description: CIDR block for the public subnet (NAT Gateway only)
+
+  PrivateSubnetCidr:
+    Type: String
+    Default: 10.43.20.0/24
+    Description: CIDR block for the private subnet (EC2 instances)
+
+Resources:
+  # --- VPC and Internet Gateway ---
+
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VpcCidr
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: fastclaws-enterprise-vpc
+        - Key: Project
+          Value: fastclaws
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: fastclaws-enterprise-igw
+        - Key: Project
+          Value: fastclaws
+
+  GatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref VPC
+      InternetGatewayId: !Ref InternetGateway
+
+  # --- Public Subnet (NAT Gateway only) ---
+
+  PublicSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: !Ref PublicSubnetCidr
+      AvailabilityZone: !Select [0, !GetAZs '']
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: fastclaws-public-subnet
+        - Key: Project
+          Value: fastclaws
+
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: fastclaws-public-rt
+        - Key: Project
+          Value: fastclaws
+
+  PublicDefaultRoute:
+    Type: AWS::EC2::Route
+    DependsOn: GatewayAttachment
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  PublicSubnetAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet
+      RouteTableId: !Ref PublicRouteTable
+
+  # --- NAT Gateway ---
+
+  NatEip:
+    Type: AWS::EC2::EIP
+    DependsOn: GatewayAttachment
+    Properties:
+      Domain: vpc
+      Tags:
+        - Key: Name
+          Value: fastclaws-nat-eip
+        - Key: Project
+          Value: fastclaws
+
+  NatGateway:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt NatEip.AllocationId
+      SubnetId: !Ref PublicSubnet
+      Tags:
+        - Key: Name
+          Value: fastclaws-nat-gw
+        - Key: Project
+          Value: fastclaws
+
+  # --- Private Subnet (EC2 instances) ---
+
+  PrivateSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: !Ref PrivateSubnetCidr
+      AvailabilityZone: !Select [0, !GetAZs '']
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: fastclaws-private-subnet
+        - Key: Project
+          Value: fastclaws
+
+  PrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: fastclaws-private-rt
+        - Key: Project
+          Value: fastclaws
+
+  PrivateDefaultRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway
+
+  PrivateSubnetAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnet
+      RouteTableId: !Ref PrivateRouteTable
+
+  # --- Security Group ---
+
+  InstanceSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: No ingress; outbound only for instance-initiated traffic
+      VpcId: !Ref VPC
+      SecurityGroupEgress:
+        - IpProtocol: '-1'
+          CidrIp: 0.0.0.0/0
+          Description: Allow all outbound traffic
+      Tags:
+        - Key: Name
+          Value: fastclaws-enterprise-sg
+        - Key: Project
+          Value: fastclaws
+
+  # --- NACLs: Public Subnet ---
+
+  PublicSubnetNacl:
+    Type: AWS::EC2::NetworkAcl
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: fastclaws-public-nacl
+        - Key: Project
+          Value: fastclaws
+
+  PublicNaclAssociation:
+    Type: AWS::EC2::SubnetNetworkAclAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet
+      NetworkAclId: !Ref PublicSubnetNacl
+
+  PublicNaclInboundTcpEphemeral:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      NetworkAclId: !Ref PublicSubnetNacl
+      Egress: false
+      RuleAction: allow
+      RuleNumber: 100
+      Protocol: 6
+      CidrBlock: 0.0.0.0/0
+      PortRange:
+        From: 1024
+        To: 65535
+
+  PublicNaclInboundUdpEphemeral:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      NetworkAclId: !Ref PublicSubnetNacl
+      Egress: false
+      RuleAction: allow
+      RuleNumber: 110
+      Protocol: 17
+      CidrBlock: 0.0.0.0/0
+      PortRange:
+        From: 1024
+        To: 65535
+
+  PublicNaclOutboundAll:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      NetworkAclId: !Ref PublicSubnetNacl
+      Egress: true
+      RuleAction: allow
+      RuleNumber: 100
+      Protocol: -1
+      CidrBlock: 0.0.0.0/0
+
+  # --- NACLs: Private Subnet ---
+
+  PrivateSubnetNacl:
+    Type: AWS::EC2::NetworkAcl
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: fastclaws-private-nacl
+        - Key: Project
+          Value: fastclaws
+
+  PrivateNaclAssociation:
+    Type: AWS::EC2::SubnetNetworkAclAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnet
+      NetworkAclId: !Ref PrivateSubnetNacl
+
+  PrivateNaclInboundTcpEphemeral:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      NetworkAclId: !Ref PrivateSubnetNacl
+      Egress: false
+      RuleAction: allow
+      RuleNumber: 100
+      Protocol: 6
+      CidrBlock: 0.0.0.0/0
+      PortRange:
+        From: 1024
+        To: 65535
+
+  PrivateNaclInboundUdpEphemeral:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      NetworkAclId: !Ref PrivateSubnetNacl
+      Egress: false
+      RuleAction: allow
+      RuleNumber: 110
+      Protocol: 17
+      CidrBlock: 0.0.0.0/0
+      PortRange:
+        From: 1024
+        To: 65535
+
+  PrivateNaclOutboundAll:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      NetworkAclId: !Ref PrivateSubnetNacl
+      Egress: true
+      RuleAction: allow
+      RuleNumber: 100
+      Protocol: -1
+      CidrBlock: 0.0.0.0/0
+
+Outputs:
+  VpcId:
+    Description: VPC ID
+    Value: !Ref VPC
+
+  SubnetId:
+    Description: Private subnet ID (for EC2 instances)
+    Value: !Ref PrivateSubnet
+
+  InstanceSecurityGroupId:
+    Description: Instance security group ID
+    Value: !GetAtt InstanceSecurityGroup.GroupId
+
+  SubnetNaclId:
+    Description: Private subnet NACL ID
+    Value: !Ref PrivateSubnetNacl
