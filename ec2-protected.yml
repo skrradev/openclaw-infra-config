@@ -14,6 +14,11 @@ Parameters:
     Type: AWS::EC2::SecurityGroup::Id
     Description: Security group ID to attach
 
+  KeyName:
+    Type: AWS::EC2::KeyPair::KeyName
+    Description: Name of an existing EC2 KeyPair for SSH access over Tailscale
+    Default: ec2-key
+
   InstanceType:
     Type: String
     Default: t3.medium
@@ -62,6 +67,7 @@ Resources:
     Type: AWS::EC2::Instance
     Properties:
       InstanceType: !Ref InstanceType
+      KeyName: !Ref KeyName
       ImageId: !Ref UbuntuAMI
       SubnetId: !Ref SubnetId
       IamInstanceProfile: !Ref InstanceProfile
