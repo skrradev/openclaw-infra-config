@@ -27,6 +27,23 @@ Using `vars.yml` to pass variables:
 ansible-playbook playbook-linux.yml -e @vars.yml
 ```
 
+### Available Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `openclaw_user` | `openclaw` | System user name |
+| `openclaw_home` | `/home/openclaw` (Linux) / `/Users/openclaw` (macOS) | User home directory |
+| `openclaw_install_mode` | `release` | `release` or `development` |
+| `openclaw_version` | `latest` | OpenClaw npm version for release mode |
+| `openclaw_ssh_keys` | `[]` | List of SSH public keys |
+| `admin_user` | `""` | Admin username — with `admin_ssh_keys`: creates user (bare metal); without: assumes existing (cloud) |
+| `admin_ssh_keys` | `[]` | SSH public keys for `admin_user` (triggers user creation when non-empty) |
+| `openclaw_repo_url` | `https://github.com/openclaw/openclaw.git` | Git repository (dev mode) |
+| `openclaw_repo_branch` | `main` | Git branch (dev mode) |
+| `tailscale_authkey` | `""` | Tailscale auth key for auto-connect |
+| `nodejs_version` | `22.x` (Linux) / `22` (macOS) | Node.js version to install |
+| `timezone` | `""` (Linux) | Linux timezone (fallback: `UTC`) |
+
 ### 3.1a Cloud (AWS/GCP) — existing `ubuntu` user
 
 ```bash
