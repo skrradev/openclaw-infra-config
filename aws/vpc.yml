@@ -4,12 +4,12 @@ Description: VPC with egress-only networking, public subnet, and restrictive NAC
 Parameters:
   VpcCidr:
     Type: String
-    Default: 10.42.0.0/16
+    Default: 10.42.0.0/16 # /16 = 65,536 IPs
     Description: CIDR block for the VPC
 
   SubnetCidr:
     Type: String
-    Default: 10.42.10.0/24
+    Default: 10.42.10.0/24 # /24 = 251 usable IPs (AWS reserves 5)
     Description: CIDR block for the egress subnet
 
   EnableTailscaleDirect:

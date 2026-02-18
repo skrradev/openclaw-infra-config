@@ -4,17 +4,17 @@ Description: Enterprise VPC with private subnet, NAT Gateway, and restrictive NA
 Parameters:
   VpcCidr:
     Type: String
-    Default: 10.43.0.0/16
+    Default: 10.43.0.0/16 # /16 = 65,536 IPs
     Description: CIDR block for the VPC
 
   PublicSubnetCidr:
     Type: String
-    Default: 10.43.10.0/24
+    Default: 10.43.10.0/24 # /24 = 251 usable IPs (AWS reserves 5)
     Description: CIDR block for the public subnet (NAT Gateway only)
 
   PrivateSubnetCidr:
     Type: String
-    Default: 10.43.20.0/24
+    Default: 10.43.20.0/24 # /24 = 251 usable IPs (AWS reserves 5)
     Description: CIDR block for the private subnet (EC2 instances)
 
 Resources:
