@@ -40,6 +40,7 @@ ansible-playbook playbook-linux.yml -e @vars.yml
 | `admin_ssh_keys` | `[]` | SSH public keys for `admin_user` (triggers user creation when non-empty) |
 | `openclaw_repo_url` | `https://github.com/openclaw/openclaw.git` | Git repository (dev mode) |
 | `openclaw_repo_branch` | `main` | Git branch (dev mode) |
+| `allow_ssh_cidrs` | `[]` | List of CIDRs allowed for SSH access (e.g. `["10.0.0.0/8"]`) |
 | `tailscale_authkey` | `""` | Tailscale auth key for auto-connect |
 | `nodejs_version` | `22.x` (Linux) / `22` (macOS) | Node.js version to install |
 | `timezone` | `""` (Linux) | Linux timezone (fallback: `UTC`) |
