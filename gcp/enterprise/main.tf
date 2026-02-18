@@ -97,6 +97,13 @@ resource "google_service_account" "instance" {
   display_name = "Service account for ${var.instance_name}"
 }
 
+# --- Latest Ubuntu 24.04 Image (equivalent to AWS SSM Parameter Store AMI lookup) ---
+
+data "google_compute_image" "ubuntu" {
+  family  = "ubuntu-2404-lts-amd64"
+  project = "ubuntu-os-cloud"
+}
+
 # --- Compute Instance ---
 
 resource "google_compute_instance" "server" {
@@ -106,7 +113,7 @@ resource "google_compute_instance" "server" {
 
   boot_disk {
     initialize_params {
-      image = "ubuntu-os-cloud/ubuntu-2404-lts"
+      image = data.google_compute_image.ubuntu.self_link
       size  = var.disk_size
       type  = "pd-balanced"
     }
