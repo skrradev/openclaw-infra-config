@@ -37,7 +37,7 @@ cd openclaw-infra-config
 
 ```bash
 aws cloudformation deploy \
-  --template-file vpc-enterprise.yml \
+  --template-file aws/vpc-enterprise.yml \
   --stack-name fastclaws-enterprise-vpc \
   --region $AWS_REGION
 ```
@@ -59,7 +59,7 @@ SG_ID=$(aws cloudformation describe-stacks --stack-name fastclaws-enterprise-vpc
   --query 'Stacks[0].Outputs[?OutputKey==`InstanceSecurityGroupId`].OutputValue' --output text)
 
 aws cloudformation deploy \
-  --template-file ec2-protected.yml \
+  --template-file aws/ec2-protected.yml \
   --stack-name openclaw-server \
   --region $AWS_REGION \
   --capabilities CAPABILITY_NAMED_IAM \

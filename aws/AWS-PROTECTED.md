@@ -37,7 +37,7 @@ cd openclaw-infra-config
 
 ```bash
 aws cloudformation deploy \
-  --template-file vpc.yml \
+  --template-file aws/vpc.yml \
   --stack-name fastclaws-vpc \
   --region $AWS_REGION
 ```
@@ -46,7 +46,7 @@ With direct Tailscale peer-to-peer (opens inbound UDP 41641):
 
 ```bash
 aws cloudformation deploy \
-  --template-file vpc.yml \
+  --template-file aws/vpc.yml \
   --stack-name fastclaws-vpc \
   --region $AWS_REGION \
   --parameter-overrides EnableTailscaleDirect=true
@@ -65,7 +65,7 @@ SG_ID=$(aws cloudformation describe-stacks --stack-name fastclaws-vpc --region $
   --query 'Stacks[0].Outputs[?OutputKey==`InstanceSecurityGroupId`].OutputValue' --output text)
 
 aws cloudformation deploy \
-  --template-file ec2-protected.yml \
+  --template-file aws/ec2-protected.yml \
   --stack-name openclaw-server \
   --region $AWS_REGION \
   --capabilities CAPABILITY_NAMED_IAM \

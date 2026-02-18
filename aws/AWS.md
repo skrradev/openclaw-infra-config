@@ -46,7 +46,7 @@ With defaults (ec2-key, t3.medium, 8GB):
 
 ```bash
 aws cloudformation deploy \
-  --template-file ec2.yml \
+  --template-file aws/ec2.yml \
   --stack-name my-server \
   --region $AWS_REGION
 ```
@@ -55,7 +55,7 @@ With custom parameters:
 
 ```bash
 aws cloudformation deploy \
-  --template-file ec2.yml \
+  --template-file aws/ec2.yml \
   --stack-name my-server \
   --region $AWS_REGION \
   --parameter-overrides \
