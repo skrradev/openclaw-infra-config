@@ -183,6 +183,16 @@ Resources:
       SubnetId: !Ref PublicSubnet
       NetworkAclId: !Ref PublicSubnetNacl
 
+  PublicNaclInboundFromVpc:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      NetworkAclId: !Ref PublicSubnetNacl
+      Egress: false
+      RuleAction: allow
+      RuleNumber: 90
+      Protocol: -1
+      CidrBlock: !Ref VpcCidr
+
   PublicNaclInboundTcpEphemeral:
     Type: AWS::EC2::NetworkAclEntry
     Properties:
