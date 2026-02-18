@@ -24,7 +24,19 @@ GCP Cloud Shell has Terraform pre-installed. Otherwise, [install Terraform](http
 
 ---
 
-## 1. Clone Infrastructure Repo
+## 1. Create SSH Key
+
+```bash
+# Create a new SSH key (skip if you already have one)
+ssh-keygen -t ed25519 -f ~/.ssh/gcp-key -C "ubuntu"
+chmod 400 ~/.ssh/gcp-key
+```
+
+> **Note:** `gcloud compute ssh` auto-manages keys, but having your own key is useful for SSH access over Tailscale.
+
+---
+
+## 2. Clone Infrastructure Repo
 
 ```bash
 git clone https://github.com/skrradev/openclaw-infra-config.git
@@ -33,7 +45,7 @@ cd openclaw-infra-config/gcp/enterprise
 
 ---
 
-## 2. Configure Variables
+## 3. Configure Variables
 
 Copy and edit the example variables file:
 
@@ -53,7 +65,7 @@ zone       = "us-central1-a"
 
 ---
 
-## 3. Deploy
+## 4. Deploy
 
 ```bash
 terraform init
@@ -62,7 +74,7 @@ terraform apply
 
 ---
 
-## 4. Get Outputs
+## 5. Get Outputs
 
 ```bash
 terraform output
@@ -70,7 +82,7 @@ terraform output
 
 ---
 
-## 5. Connect via IAP Tunnel
+## 6. Connect via IAP Tunnel
 
 Compute Engine instances in the private subnet have no public IP. Use IAP tunnel to connect:
 
@@ -86,7 +98,7 @@ eval "$(terraform output -raw iap_ssh_command)"
 
 ---
 
-## 6. Tear Down
+## 7. Tear Down
 
 ```bash
 terraform destroy
