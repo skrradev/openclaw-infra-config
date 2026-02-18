@@ -1,90 +1,127 @@
 # Ubuntu Setup
 
-## 1. Install Ansible
-
-To install Ansible on Ubuntu, run the following commands:
+## 1. Clone OpenClaw Ansible
 
 ```bash
-
-sudo apt update
-
-
-sudo apt install software-properties-common -y
-
-
-sudo add-apt-repository --yes --update ppa:ansible/ansible
-
-
-sudo apt install ansible -y
+git clone https://github.com/skrradev/openclaw-ansible
+cd openclaw-ansible
 ```
 
-## Verify Installation
+## 2. Install Ansible
 
-Check the installed version:
+```bash
+sudo ./install-ansible.sh
+```
+
+Verify installation:
 
 ```bash
 ansible --version
 ```
 
-## 2. Clone OpenClaw Ansible
+## 3. Run the Playbooks
 
-Clone the repository to your local machine:
-
-```bash
-git clone https://github.com/skrradev/openclaw-ansible
-```
-
-Navigate into the directory:
+Using `vars.yml` to pass variables:
 
 ```bash
-cd openclaw-ansible
+ansible-playbook playbook-linux.yml -e @vars.yml
 ```
 
-## 3. Run the Playbook
-
-Finally, execute the Ansible playbook to configure the system. You will be prompted for your sudo password:
+### 3.1a Cloud (AWS/GCP) — existing `ubuntu` user
 
 ```bash
-ansible-playbook playbook-linux.yml --ask-become-pass
+# Without Tailscale
+ansible-playbook playbook-linux.yml \
+  -e admin_user=ubuntu \
+  -e timezone=Asia/Almaty
+
+# With Tailscale auto-connect (get key: https://login.tailscale.com/admin/settings/keys)
+ansible-playbook playbook-linux.yml \
+  -e admin_user=ubuntu \
+  -e timezone=Asia/Almaty \
+  -e tailscale_authkey=<YOUR_KEY>
 ```
 
-> [!NOTE]
-> The `--ask-become-pass` (or `-K`) flag ensures that Ansible asks for your privilege escalation password so it can run commands with `sudo` during the configuration process.
+### 3.1b Hetzner, Digital Ocean
+
+```bash
+# Without Tailscale
+ansible-playbook playbook-linux.yml \
+  -e admin_user=admin \
+  -e timezone=Europe/Berlin \
+  -e admin_ssh_keys=["ssh-ed25519 AAAA... you@laptop"]
+
+# With Tailscale auto-connect
+ansible-playbook playbook-linux.yml \
+  -e admin_user=admin \
+  -e timezone=Europe/Berlin \
+  -e admin_ssh_keys=["ssh-ed25519 AAAA... you@laptop"] \
+  -e tailscale_authkey=<YOUR_KEY>
+```
+
+### 3.2 Post-Install Hardening
+
+> On Hetzner or DO, when you first run as root, switch to the created admin user before hardening:
+> ```bash
+> sudo su - ubuntu
+> ```
+
+Using `vars.yml`:
+
+```bash
+ansible-playbook playbook-linux-ssh-strict.yml -e @vars.yml
+```
+
+Or with inline variables:
+
+```bash
+# Strict SSH (key-only, no root login) — requires admin_user
+ansible-playbook playbook-linux-ssh-strict.yml \
+  -e admin_user=ubuntu
+```
+
+> **Warning:** Before lockdown, make sure Tailscale is connected (`tailscale up`) — otherwise you may lose access to the server.
+
+```bash
+# Lock SSH to Tailscale only (run after `tailscale up`)
+ansible-playbook playbook-linux-ssh-lockdown.yml
+```
+
+After lockdown, SSH to the server using the Tailscale IP and admin user.
 
 ## 4. Post-Install
 
-After installation completes, switch to the `openclaw` user:
+Clean up the Ansible repo:
+
+```bash
+rm -rf openclaw-ansible/
+```
+
+Switch to the `openclaw` user:
 
 ```bash
 sudo su - openclaw
 ```
 
-Then run the quick-start onboarding wizard:
+Run the quick-start onboarding wizard:
 
 ```bash
 openclaw onboard --install-daemon
 ```
 
 This will:
-*   Guide you through the setup wizard
-*   Configure your messaging provider (WhatsApp/Telegram/Signal)
-*   Install and start the daemon service
+- Guide you through the setup wizard
+- Configure your messaging provider (WhatsApp/Telegram/Signal)
+- Install and start the daemon service
 
-## Alternative Manual Setup
+### Alternative Manual Setup
 
 If you prefer to configure components manually:
 
 ```bash
-# Configure manually
 openclaw configure
-
-# Login to provider
 openclaw providers login
-
-# Test gateway
 openclaw gateway
-
-# Install as daemon
 openclaw daemon install
 openclaw daemon start
 
@@ -92,3 +129,78 @@ openclaw daemon start
 openclaw status
 openclaw logs
 ```
+
+## 5. Tailscale Serve Mode
+
+Proxy HTTPS through your tailnet:
+
+```bash
+# Proxies HTTPS through your tailnet
+openclaw config set gateway.tailscale.mode serve
+
+# Gateway only listens on 127.0.0.1; Tailscale serve handles external access
+openclaw config set gateway.bind loopback
+
+# Clean up tailscale serve when gateway stops
+openclaw config set gateway.tailscale.resetOnExit true
+
+# Allow Tailscale-authenticated connections (no token needed from tailnet peers)
+openclaw config set gateway.auth.allowTailscale true
+
+# Restart to apply
+openclaw gateway restart
+```
+
+## 6. Device Management
+
+```bash
+# See pending pairing requests
+openclaw devices list
+
+# Approve a request
+openclaw devices approve <requestId>
+```
+
+## 7. Google Setup
+
+### 7.1 Get OAuth2 Credentials
+
+Create OAuth2 credentials from [Google Cloud Console](https://console.cloud.google.com/apis/credentials):
+
+1. [Create a project](https://console.cloud.google.com/projectcreate)
+2. Enable the APIs you need:
+   - [Gmail API](https://console.cloud.google.com/apis/api/gmail.googleapis.com)
+   - [Google Calendar API](https://console.cloud.google.com/apis/api/calendar-json.googleapis.com)
+   - [Google Chat API](https://console.cloud.google.com/apis/api/chat.googleapis.com)
+   - [Google Drive API](https://console.cloud.google.com/apis/api/drive.googleapis.com)
+   - [Google Classroom API](https://console.cloud.google.com/apis/api/classroom.googleapis.com)
+   - [People API (Contacts)](https://console.cloud.google.com/apis/api/people.googleapis.com)
+   - [Google Tasks API](https://console.cloud.google.com/apis/api/tasks.googleapis.com)
+   - [Google Sheets API](https://console.cloud.google.com/apis/api/sheets.googleapis.com)
+   - [Google Forms API](https://console.cloud.google.com/apis/api/forms.googleapis.com)
+   - [Apps Script API](https://console.cloud.google.com/apis/api/script.googleapis.com)
+   - [Cloud Identity API (Groups)](https://console.cloud.google.com/apis/api/cloudidentity.googleapis.com)
+3. [Configure OAuth consent screen](https://console.cloud.google.com/auth/branding)
+4. If your app is in "Testing", [add test users](https://console.cloud.google.com/auth/audience)
+5. [Create OAuth client](https://console.cloud.google.com/auth/clients) — Application type: "Desktop app"
+6. Download the JSON file (usually named `client_secret_....apps.googleusercontent.com.json`)
+
+### 7.2 Store Credentials
+
+```bash
+gog auth credentials ~/Downloads/client_secret_....json
+```
+
+### 7.3 Add Account
+
+Manual interactive flow (recommended):
+
+```bash
+gog auth add you@gmail.com --services user --manual
+```
+
+1. The CLI prints an auth URL — open it in a local browser
+2. After approval, copy the full loopback redirect URL from the browser address bar
+3. Paste that URL back into the terminal when prompted
+
+> **Note:** Add `GOG_KEYRING_PASSWORD` to your `.env` file.
