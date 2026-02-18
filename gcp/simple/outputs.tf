@@ -10,5 +10,5 @@ output "public_ip" {
 
 output "ssh_command" {
   description = "SSH command to connect"
-  value       = "ssh ubuntu@${google_compute_instance.server.network_interface[0].access_config[0].nat_ip}"
+  value       = "ssh -i ~/.ssh/gcp-key ubuntu@${google_compute_instance.server.network_interface[0].access_config[0].nat_ip}"
 }
