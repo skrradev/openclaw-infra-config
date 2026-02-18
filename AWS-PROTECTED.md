@@ -12,6 +12,16 @@ Set your target region:
 export AWS_REGION="eu-central-1"
 ```
 
+Ensure an EC2 key pair exists in your region. The EC2 template defaults to `ec2-key`. Create one if it doesn't exist:
+
+```bash
+aws ec2 create-key-pair --key-name ec2-key --region $AWS_REGION \
+  --query 'KeyMaterial' --output text > ec2-key.pem
+chmod 400 ec2-key.pem
+```
+
+To use a different key name, pass `KeyName=your-key` when deploying the EC2 stack in step 3.
+
 ---
 
 ## 1. Clone Infrastructure Repo
