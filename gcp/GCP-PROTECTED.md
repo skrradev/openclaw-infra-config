@@ -14,10 +14,10 @@ export REGION="us-central1"
 export ZONE="us-central1-a"
 ```
 
-Enable the IAP API in your project:
+Enable required APIs:
 
 ```bash
-gcloud services enable iap.googleapis.com --project=$PROJECT_ID
+gcloud services enable compute.googleapis.com iap.googleapis.com --project=$PROJECT_ID
 ```
 
 GCP Cloud Shell has Terraform pre-installed. Otherwise, [install Terraform](https://developer.hashicorp.com/terraform/install).

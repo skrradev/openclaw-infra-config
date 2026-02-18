@@ -12,6 +12,12 @@ export REGION="us-central1"
 export ZONE="us-central1-a"
 ```
 
+Enable the Compute Engine API:
+
+```bash
+gcloud services enable compute.googleapis.com --project=$PROJECT_ID
+```
+
 GCP Cloud Shell has Terraform pre-installed. Otherwise, [install Terraform](https://developer.hashicorp.com/terraform/install).
 
 ---
