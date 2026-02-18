@@ -1,0 +1,9 @@
+project_id = "my-gcp-project"
+region     = "europe-west1"
+zone       = "europe-west1-b"
+
+# Optional overrides:
+# machine_type           = "e2-medium"
+# disk_size              = 20
+# instance_name          = "openclaw-server"
+# enable_tailscale_direct = true

@@ -1,0 +1,10 @@
+project_id     = "my-gcp-project"
+region         = "europe-west1"
+zone           = "europe-west1-b"
+ssh_public_key = "ssh-ed25519 AAAAC3... user@host"
+
+# Optional overrides:
+# machine_type  = "e2-medium"
+# disk_size     = 20
+# ssh_cidr      = "203.0.113.0/32"
+# instance_name = "openclaw-server"
