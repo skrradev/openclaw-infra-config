@@ -10,8 +10,8 @@ Set your project and region:
 
 ```bash
 export PROJECT_ID="my-gcp-project"
-export REGION="europe-west1"
-export ZONE="europe-west1-b"
+export REGION="us-central1"
+export ZONE="us-central1-a"
 ```
 
 Enable the IAP API in your project:
@@ -45,8 +45,8 @@ Edit `terraform.tfvars` with your project ID:
 
 ```hcl
 project_id = "my-gcp-project"
-region     = "europe-west1"
-zone       = "europe-west1-b"
+region     = "us-central1"
+zone       = "us-central1-a"
 ```
 
 With direct Tailscale peer-to-peer (opens inbound UDP 41641):
@@ -77,7 +77,7 @@ terraform output
 ## 5. Connect via IAP Tunnel
 
 ```bash
-gcloud compute ssh openclaw-server --zone=europe-west1-b --tunnel-through-iap
+gcloud compute ssh openclaw-server --zone=us-central1-a --tunnel-through-iap
 ```
 
 Or use the command from Terraform output:

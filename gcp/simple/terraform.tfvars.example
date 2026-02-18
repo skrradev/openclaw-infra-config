@@ -1,6 +1,6 @@
 project_id     = "my-gcp-project"
-region         = "europe-west1"
-zone           = "europe-west1-b"
+region         = "us-central1"
+zone           = "us-central1-a"
 ssh_public_key = "ssh-ed25519 AAAAC3... user@host"
 
 # Optional overrides:

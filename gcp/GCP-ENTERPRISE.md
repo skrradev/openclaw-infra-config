@@ -10,8 +10,8 @@ Set your project and region:
 
 ```bash
 export PROJECT_ID="my-gcp-project"
-export REGION="europe-west1"
-export ZONE="europe-west1-b"
+export REGION="us-central1"
+export ZONE="us-central1-a"
 ```
 
 Enable the IAP API in your project:
@@ -45,8 +45,8 @@ Edit `terraform.tfvars` with your project ID:
 
 ```hcl
 project_id = "my-gcp-project"
-region     = "europe-west1"
-zone       = "europe-west1-b"
+region     = "us-central1"
+zone       = "us-central1-a"
 ```
 
 > **Note:** Instances in the private subnet have no public IP, so Tailscale uses DERP relay servers for connectivity. The `enable_tailscale_direct` parameter from `protected/` is intentionally omitted here — direct peer-to-peer is impossible without a public IP.
@@ -75,7 +75,7 @@ terraform output
 Compute Engine instances in the private subnet have no public IP. Use IAP tunnel to connect:
 
 ```bash
-gcloud compute ssh openclaw-server --zone=europe-west1-b --tunnel-through-iap
+gcloud compute ssh openclaw-server --zone=us-central1-a --tunnel-through-iap
 ```
 
 Or use the command from Terraform output:
