@@ -7,7 +7,7 @@ Deploy an Ubuntu 24.04 Compute Engine instance with a public IP using the Terraf
 Set your project and region:
 
 ```bash
-export PROJECT_ID="my-gcp-project"
+export PROJECT_ID="openclaw"
 export REGION="us-central1"
 export ZONE="us-central1-a"
 ```
@@ -48,7 +48,7 @@ cp terraform.tfvars.example terraform.tfvars
 Edit `terraform.tfvars` with your project ID and SSH public key:
 
 ```hcl
-project_id     = "my-gcp-project"
+project_id     = "openclaw"
 region         = "us-central1"
 zone           = "us-central1-a"
 ssh_public_key = "ssh-ed25519 AAAAC3... user@host"  # contents of ~/.ssh/gcp-key.pub

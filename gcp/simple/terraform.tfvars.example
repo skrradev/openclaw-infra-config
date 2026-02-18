@@ -1,4 +1,4 @@
-project_id     = "my-gcp-project"
+project_id     = "openclaw"
 region         = "us-central1"
 zone           = "us-central1-a"
 ssh_public_key = "ssh-ed25519 AAAAC3... user@host"
