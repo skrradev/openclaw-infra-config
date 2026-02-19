@@ -40,6 +40,7 @@ ansible-playbook playbook-linux.yml -e @vars.yml
 | `admin_ssh_keys` | `[]` | SSH public keys for `admin_user` (triggers user creation when non-empty) |
 | `openclaw_repo_url` | `https://github.com/openclaw/openclaw.git` | Git repository (dev mode) |
 | `openclaw_repo_branch` | `main` | Git branch (dev mode) |
+| `openclaw_browser_enabled` | `true` (Linux) | Install Playwright Chromium for browser automation |
 | `allow_ssh_cidrs` | `[]` | List of CIDRs allowed for SSH access (e.g. `["10.0.0.0/8"]`) |
 | `tailscale_authkey` | `""` | Tailscale auth key for auto-connect |
 | `nodejs_version` | `22.x` (Linux) / `22` (macOS) | Node.js version to install |
@@ -61,6 +62,15 @@ ansible-playbook playbook-linux.yml \
 ```
 
 ### 3.1b Hetzner, Digital Ocean
+
+Create an SSH key pair beforehand (skip if you already have one):
+
+```bash
+ssh-keygen -t ed25519 -f ~/.ssh/admin-key -C "admin"
+chmod 400 ~/.ssh/admin-key
+```
+
+Use the public key (`~/.ssh/admin-key.pub`) in `admin_ssh_keys` below.
 
 ```bash
 # Without Tailscale
@@ -165,11 +175,39 @@ openclaw config set gateway.tailscale.resetOnExit true
 # Allow Tailscale-authenticated connections (no token needed from tailnet peers)
 openclaw config set gateway.auth.allowTailscale true
 
+# Allow restart
+openclaw config set commands.restart true
+
 # Restart to apply
 openclaw gateway restart
+
 ```
 
-## 6. Device Management
+
+## 6. Browser Settings
+
+```bash
+# Find the Playwright Chromium binary path
+find ~/.cache/ms-playwright/chromium-*/chrome-linux/chrome -type f 2>/dev/null
+
+# Point OpenClaw to the Playwright Chromium binary instead of auto-detecting
+# (auto-detect would find Snap Chromium, which fails from systemd services)
+openclaw config set browser.executablePath $(find ~/.cache/ms-playwright/chromium-*/chrome-linux/chrome -type f | sort -V | tail -1)
+
+# Enable browser automation features (web scraping, screenshots, etc.)
+openclaw config set browser.enabled true
+
+# Run Chrome without a visible window (no display needed on headless servers)
+# Launches with --headless=new flag
+openclaw config set browser.headless true
+
+# Disable Chrome's sandbox (--no-sandbox --disable-setuid-sandbox)
+# Required when running as a service user — Chrome's sandbox needs
+# setuid helpers that systemd's security hardening (NoNewPrivileges) blocks
+openclaw config set browser.noSandbox true
+```
+
+## 7. Device Management for Control UI
 
 ```bash
 # See pending pairing requests
@@ -179,9 +217,9 @@ openclaw devices list
 openclaw devices approve <requestId>
 ```
 
-## 7. Google Setup
+## 8. Google Setup
 
-### 7.1 Get OAuth2 Credentials
+### 8.1 Get OAuth2 Credentials
 
 Create OAuth2 credentials from [Google Cloud Console](https://console.cloud.google.com/apis/credentials):
 
@@ -203,13 +241,13 @@ Create OAuth2 credentials from [Google Cloud Console](https://console.cloud.goog
 5. [Create OAuth client](https://console.cloud.google.com/auth/clients) — Application type: "Desktop app"
 6. Download the JSON file (usually named `client_secret_....apps.googleusercontent.com.json`)
 
-### 7.2 Store Credentials
+### 8.2 Store Credentials
 
 ```bash
 gog auth credentials ~/Downloads/client_secret_....json
 ```
 
-### 7.3 Add Account
+### 8.3 Add Account
 
 Manual interactive flow (recommended):
 
