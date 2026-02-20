@@ -187,7 +187,8 @@ find ~/.cache/ms-playwright/chromium-*/chrome-linux*/chrome -type f 2>/dev/null
 openclaw config set browser.executablePath $(find ~/.cache/ms-playwright/chromium-*/chrome-linux*/chrome -type f | sort -V | tail -1) && \
 openclaw config set browser.enabled true && \
 openclaw config set browser.headless true && \
-openclaw config set browser.noSandbox true
+openclaw config set browser.noSandbox true && \
+openclaw config set browser.defaultProfile openclaw
 ```
 
 ```bash
