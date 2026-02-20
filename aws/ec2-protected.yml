@@ -26,7 +26,7 @@ Parameters:
 
   VolumeSize:
     Type: Number
-    Default: 8
+    Default: 20
     Description: Root volume size in GB
 
   InstanceName:

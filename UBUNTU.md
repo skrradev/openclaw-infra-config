@@ -187,12 +187,12 @@ openclaw gateway restart
 ## 6. Browser Settings
 
 ```bash
-# Find the Playwright Chromium binary path
-find ~/.cache/ms-playwright/chromium-*/chrome-linux/chrome -type f 2>/dev/null
+# Find the Playwright Chromium binary path (chrome-linux or chrome-linux64 depending on version)
+find ~/.cache/ms-playwright/chromium-*/chrome-linux*/chrome -type f 2>/dev/null
 
 # Point OpenClaw to the Playwright Chromium binary instead of auto-detecting
 # (auto-detect would find Snap Chromium, which fails from systemd services)
-openclaw config set browser.executablePath $(find ~/.cache/ms-playwright/chromium-*/chrome-linux/chrome -type f | sort -V | tail -1)
+openclaw config set browser.executablePath $(find ~/.cache/ms-playwright/chromium-*/chrome-linux*/chrome -type f | sort -V | tail -1)
 
 # Enable browser automation features (web scraping, screenshots, etc.)
 openclaw config set browser.enabled true
@@ -205,7 +205,14 @@ openclaw config set browser.headless true
 # Required when running as a service user — Chrome's sandbox needs
 # setuid helpers that systemd's security hardening (NoNewPrivileges) blocks
 openclaw config set browser.noSandbox true
+
+
+# Restart to apply
+openclaw gateway restart
 ```
+
+
+
 
 ## 7. Device Management for Control UI
 
@@ -260,3 +267,65 @@ gog auth add you@gmail.com --services user --manual
 3. Paste that URL back into the terminal when prompted
 
 > **Note:** Add `GOG_KEYRING_PASSWORD` to your `.env` file.
+
+## 9. Tailscale Commands
+
+### 9.1 Get Auth Key
+
+Generate an auth key from the [Tailscale admin console](https://login.tailscale.com/admin/settings/keys):
+
+1. Go to **Settings > Keys > Generate auth key**
+2. Enable **Reusable** if deploying multiple servers
+3. Enable **Ephemeral** for temporary/dev machines (auto-removed when offline)
+4. Copy the key (starts with `tskey-auth-...`)
+
+### 9.2 Connect to Tailnet
+
+If Tailscale was installed by the Ansible playbook (via `tailscale_authkey`), it's already connected. Otherwise:
+
+```bash
+# Connect with auth key (non-interactive, good for scripts)
+sudo tailscale up --authkey=tskey-auth-...
+
+# Or connect interactively (prints a login URL)
+sudo tailscale up
+```
+
+### 9.3 Verify Connection
+
+```bash
+# Check status
+tailscale status
+
+# Show your Tailscale IP
+tailscale ip -4
+
+# Ping another device on your tailnet
+tailscale ping <hostname>
+```
+
+### 9.4 SSH Over Tailscale
+
+From your local machine (must also be on the tailnet):
+
+```bash
+ssh admin@<tailscale-ip>
+# or by hostname
+ssh admin@<hostname>
+```
+
+### 9.5 Useful Commands
+
+```bash
+# Disconnect from tailnet (keeps installed)
+sudo tailscale down
+
+# Reconnect
+sudo tailscale up
+
+# Log out completely (removes device from tailnet)
+sudo tailscale logout
+
+# Check Tailscale service status
+sudo systemctl status tailscaled
+```
