@@ -156,6 +156,7 @@ openclaw daemon start
 # Check status
 openclaw status
 openclaw logs
+openclaw logs --follow
 ```
 
 ## 5. Tailscale Serve Mode
