@@ -164,51 +164,33 @@ openclaw logs --follow
 Proxy HTTPS through your tailnet:
 
 ```bash
-# Proxies HTTPS through your tailnet
-openclaw config set gateway.tailscale.mode serve
-
-# Gateway only listens on 127.0.0.1; Tailscale serve handles external access
-openclaw config set gateway.bind loopback
-
-# Clean up tailscale serve when gateway stops
-openclaw config set gateway.tailscale.resetOnExit true
-
-# Allow Tailscale-authenticated connections (no token needed from tailnet peers)
-openclaw config set gateway.auth.allowTailscale true
-
-# Allow restart
+openclaw config set gateway.tailscale.mode serve && \
+openclaw config set gateway.bind loopback && \
+openclaw config set gateway.tailscale.resetOnExit true && \
+openclaw config set gateway.auth.allowTailscale true && \
 openclaw config set commands.restart true
+```
 
-# Restart to apply
+```bash
 openclaw gateway restart
-
 ```
 
 
 ## 6. Browser Settings
 
 ```bash
-# Find the Playwright Chromium binary path (chrome-linux or chrome-linux64 depending on version)
+# Verify Playwright Chromium is installed
 find ~/.cache/ms-playwright/chromium-*/chrome-linux*/chrome -type f 2>/dev/null
+```
 
-# Point OpenClaw to the Playwright Chromium binary instead of auto-detecting
-# (auto-detect would find Snap Chromium, which fails from systemd services)
-openclaw config set browser.executablePath $(find ~/.cache/ms-playwright/chromium-*/chrome-linux*/chrome -type f | sort -V | tail -1)
-
-# Enable browser automation features (web scraping, screenshots, etc.)
-openclaw config set browser.enabled true
-
-# Run Chrome without a visible window (no display needed on headless servers)
-# Launches with --headless=new flag
-openclaw config set browser.headless true
-
-# Disable Chrome's sandbox (--no-sandbox --disable-setuid-sandbox)
-# Required when running as a service user — Chrome's sandbox needs
-# setuid helpers that systemd's security hardening (NoNewPrivileges) blocks
+```bash
+openclaw config set browser.executablePath $(find ~/.cache/ms-playwright/chromium-*/chrome-linux*/chrome -type f | sort -V | tail -1) && \
+openclaw config set browser.enabled true && \
+openclaw config set browser.headless true && \
 openclaw config set browser.noSandbox true
+```
 
-
-# Restart to apply
+```bash
 openclaw gateway restart
 ```
 
