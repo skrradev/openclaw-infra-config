@@ -151,8 +151,24 @@ openclaw config set subagent.archiveAfterMinutes 60
 
 ## Daemon
 
+`openclaw onboard --install-daemon` installs and starts the daemon service. Platform differences:
+
+| | macOS | Linux |
+|---|---|---|
+| Daemon type | launchd (LaunchAgent) | systemd (user service) |
+| Service file | `~/Library/LaunchAgents/ai.openclaw.gateway.plist` | `~/.config/systemd/user/openclaw-gateway.service` |
+| Auto-start | `RunAtLoad: true` | `WantedBy=default.target` |
+| Auto-restart | `KeepAlive: true` | `Restart=always` |
+
+> **macOS note:** LaunchAgents are user-level services — they only run when the user is logged in (unlike Linux systemd with lingering enabled).
+
+> **Token note:** `onboard --install-daemon` generates a new gateway token. If you already have a working token, pass it explicitly to avoid mismatch:
+> ```bash
+> openclaw onboard --install-daemon --gateway-token YOUR_EXISTING_TOKEN
+> ```
+
 ```bash
-# Install as systemd service
+# Install daemon
 openclaw daemon install
 
 # Start / stop / restart
@@ -191,4 +207,20 @@ openclaw devices list
 
 # Approve a device
 openclaw devices approve <requestId>
+```
+
+## Control UI (Dashboard)
+
+The Control UI connects to the gateway via WebSocket (`ws://127.0.0.1:18789`) and requires a gateway token.
+
+If you see **"gateway token missing"**, paste your token in the "Gateway Token" field and click Connect.
+
+To get your token:
+
+```bash
+# Print dashboard URL with token embedded
+openclaw dashboard --no-open
+
+# Or get the token directly from config
+openclaw config get gateway.auth.token
 ```
