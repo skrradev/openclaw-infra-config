@@ -333,3 +333,28 @@ Bot ignores all private messages. Only works in group channels.
 ```
 
 Commander open to pairing, Engineer restricted to one user, ThinkTank group-only.
+
+## Session Scope (dmScope)
+
+Controls how DM sessions are isolated between agents, platforms, and users.
+
+```bash
+openclaw config set session.dmScope per-account-channel-peer
+```
+
+| Value | Isolation | Example |
+|-------|-----------|---------|
+| `main` | One session for everything | DM Commander on Discord and Telegram = same session, same context |
+| `per-peer` | Per user | Different users get different sessions, but same user across all bots/channels shares one |
+| `per-channel-peer` | Per platform + user | Discord vs Telegram = different sessions. But Commander and Engineer on same platform = same session |
+| `per-account-channel-peer` | Per bot + platform + user | Commander on Discord, Commander on Telegram, Engineer on Discord = all 3 separate. **Maximum isolation** |
+
+```json
+{
+  "session": {
+    "dmScope": "per-account-channel-peer"
+  }
+}
+```
+
+**Recommended:** `per-account-channel-peer` for multi-agent setups. No context leaks between agents or platforms.
