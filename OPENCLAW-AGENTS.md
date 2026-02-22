@@ -162,6 +162,24 @@ All Telegram accounts should show `OK`.
 }
 ```
 
+## Deleting an Agent
+
+```bash
+# Remove the agent
+openclaw agents delete research
+
+# Remove its binding
+jq '.bindings = [.bindings[] | select(.agentId != "research")]' \
+  ~/.openclaw/openclaw.json | sponge ~/.openclaw/openclaw.json
+
+# Optionally remove the bot token
+jq 'del(.channels.telegram.accounts.research)' \
+  ~/.openclaw/openclaw.json | sponge ~/.openclaw/openclaw.json
+
+# Restart
+openclaw gateway restart
+```
+
 ## Quick Reference — 5 Commands
 
 ```bash
