@@ -268,3 +268,182 @@ Should show:
   }
 }
 ```
+
+---
+
+# Slack Multi-Agent Setup
+
+## Per Bot App (repeat for each agent)
+
+### 1. Create Slack App
+
+1. Go to https://api.slack.com/apps
+2. Click **Create New App** > **From scratch**
+3. App Name: e.g. "Commander"
+4. Pick your workspace > **Create App**
+
+### 2. Enable Socket Mode + Get App Token
+
+1. Left sidebar > **Socket Mode** > toggle **ON**
+2. Create App-Level Token:
+   - Name: `socket`
+   - Scope: `connections:write`
+   - Click **Generate**
+3. Copy the `xapp-...` token — this is your `appToken`
+
+### 3. Add Bot Token Scopes
+
+Left sidebar > **OAuth & Permissions** > scroll to **Bot Token Scopes** > add ALL:
+
+- `chat:write`
+- `channels:read`
+- `channels:history`
+- `groups:read`
+- `groups:history`
+- `im:read`
+- `im:history`
+- `im:write`
+- `users:read`
+
+### 4. Enable Event Subscriptions
+
+1. Left sidebar > **Event Subscriptions** > toggle **ON**
+2. Under **Subscribe to bot events**, add:
+   - `message.channels`
+   - `message.groups`
+   - `message.im`
+3. Click **Save Changes**
+
+### 5. Enable DMs (App Home)
+
+1. Left sidebar > **App Home**
+2. Scroll to **Show Tabs**
+3. Check **"Allow users to send Slash commands and messages from the messages tab"**
+4. Save
+
+### 6. Install App to Workspace
+
+1. Left sidebar > **OAuth & Permissions**
+2. Click **Install to Workspace** (or **Reinstall** if updating scopes)
+3. Authorize
+4. Copy the `xoxb-...` token — this is your `botToken`
+
+### 7. Invite Bot to Channel
+
+In Slack channel type: `/invite @BotName`
+
+## OpenClaw Slack Config
+
+### 8. Enable Slack Plugin
+
+```bash
+jq '.plugins.entries.slack = {"enabled": true}' ~/.openclaw/openclaw.json | sponge ~/.openclaw/openclaw.json
+```
+
+### 9. Add Bot Tokens
+
+```bash
+openclaw config set channels.slack.enabled true && \
+openclaw config set channels.slack.accounts.commander.botToken "xoxb-COMMANDER" && \
+openclaw config set channels.slack.accounts.commander.appToken "xapp-COMMANDER" && \
+openclaw config set channels.slack.accounts.strategist.botToken "xoxb-STRATEGIST" && \
+openclaw config set channels.slack.accounts.strategist.appToken "xapp-STRATEGIST" && \
+openclaw config set channels.slack.accounts.engineer.botToken "xoxb-ENGINEER" && \
+openclaw config set channels.slack.accounts.engineer.appToken "xapp-ENGINEER" && \
+openclaw config set channels.slack.accounts.creator.botToken "xoxb-CREATOR" && \
+openclaw config set channels.slack.accounts.creator.appToken "xapp-CREATOR" && \
+openclaw config set channels.slack.accounts.thinktank.botToken "xoxb-THINKTANK" && \
+openclaw config set channels.slack.accounts.thinktank.appToken "xapp-THINKTANK"
+```
+
+### 10. Disable Streaming (required)
+
+Native streaming causes `missing_recipient_team_id` error.
+
+```bash
+jq '
+  .channels.slack.accounts.commander.streaming = false |
+  .channels.slack.accounts.strategist.streaming = false |
+  .channels.slack.accounts.engineer.streaming = false |
+  .channels.slack.accounts.creator.streaming = false |
+  .channels.slack.accounts.thinktank.streaming = false
+' ~/.openclaw/openclaw.json | sponge ~/.openclaw/openclaw.json
+```
+
+### 11. Set Channel Allowlist + requireMention
+
+Get your Slack Channel ID: right-click channel > **View channel details** > scroll to bottom > copy Channel ID.
+
+Commander listens to everything. Others only respond when @mentioned.
+
+> **IMPORTANT:** `requireMention` must be on the **channel config**, not the account level. Setting it only on the account does NOT work.
+
+```bash
+jq '
+  .channels.slack.accounts.commander.groupPolicy = "allowlist" |
+  .channels.slack.accounts.commander.channels."CHANNEL_ID" = {"allow":true,"requireMention":false} |
+  .channels.slack.accounts.strategist.groupPolicy = "allowlist" |
+  .channels.slack.accounts.strategist.channels."CHANNEL_ID" = {"allow":true,"requireMention":true} |
+  .channels.slack.accounts.engineer.groupPolicy = "allowlist" |
+  .channels.slack.accounts.engineer.channels."CHANNEL_ID" = {"allow":true,"requireMention":true} |
+  .channels.slack.accounts.creator.groupPolicy = "allowlist" |
+  .channels.slack.accounts.creator.channels."CHANNEL_ID" = {"allow":true,"requireMention":true} |
+  .channels.slack.accounts.thinktank.groupPolicy = "allowlist" |
+  .channels.slack.accounts.thinktank.channels."CHANNEL_ID" = {"allow":true,"requireMention":true}
+' ~/.openclaw/openclaw.json | sponge ~/.openclaw/openclaw.json
+```
+
+### 12. Add Bindings
+
+```bash
+jq '.bindings += [
+  {"agentId":"commander","match":{"channel":"slack","accountId":"commander"}},
+  {"agentId":"strategist","match":{"channel":"slack","accountId":"strategist"}},
+  {"agentId":"engineer","match":{"channel":"slack","accountId":"engineer"}},
+  {"agentId":"creator","match":{"channel":"slack","accountId":"creator"}},
+  {"agentId":"thinktank","match":{"channel":"slack","accountId":"thinktank"}}
+]' ~/.openclaw/openclaw.json | sponge ~/.openclaw/openclaw.json
+```
+
+### 13. Restart and Verify
+
+```bash
+openclaw gateway restart
+```
+
+```bash
+openclaw status --all
+```
+
+Should show: `Slack ON OK tokens ok accounts 5/5`
+
+## Slack Behavior
+
+- **Channel messages**: Commander responds to everything (global listener), others only when @mentioned
+- **Replies are in threads**: Slack default — keeps channel clean
+- **DMs**: Each bot can be DMed directly for private 1-on-1 conversations
+
+## Slack Common Pitfalls
+
+| Problem | Cause | Fix |
+|---------|-------|-----|
+| `missing_scope` error in logs | Bot missing OAuth scopes | Add all 9 scopes in step 3, then **Reinstall** app |
+| `no-mention` skipping even with `requireMention: false` | `requireMention` set on account level only | Must set on **channel config** level (step 11) |
+| Bot receives messages but doesn't respond | Streaming error `missing_recipient_team_id` | Set `streaming: false` per account (step 10) |
+| "Sending messages to this app has been turned off" in DMs | DMs not enabled in app settings | App Home > enable "Allow users to send messages" (step 5) |
+| No message events received at all | Event Subscriptions not configured | Enable events + subscribe to `message.channels`, `message.groups`, `message.im` (step 4) |
+| Channel messages ignored even with allowlist | Channel ID not added to account config | Add channel with `allow: true` to account channels (step 11) |
+| Scopes added but still failing | App not reinstalled after scope changes | Must click **Reinstall to Workspace** after any scope change |
+
+## Slack Developer Portal Checklist
+
+For each bot app, make sure ALL of these are done:
+
+- [ ] Socket Mode: ON
+- [ ] App-Level Token created with `connections:write`
+- [ ] All 9 Bot Token Scopes added
+- [ ] Event Subscriptions: ON
+- [ ] Bot events: `message.channels`, `message.groups`, `message.im`
+- [ ] App Home: "Allow users to send Slash commands and messages" checked
+- [ ] App installed/reinstalled to workspace
+- [ ] Bot invited to channel with `/invite @BotName`
