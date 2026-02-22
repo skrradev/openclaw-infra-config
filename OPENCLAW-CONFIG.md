@@ -224,3 +224,112 @@ openclaw dashboard --no-open
 # Or get the token directly from config
 openclaw config get gateway.auth.token
 ```
+
+## DM Policy (Telegram)
+
+Controls who can message your bot via DM.
+
+| Policy | Description |
+|--------|-------------|
+| `pairing` | Default. User confirms identity once, then trusted |
+| `open` | Anyone can DM, no questions asked |
+| `allowlist` | Only specific Telegram user IDs allowed |
+| `disabled` | No DMs at all — group channels only |
+
+```bash
+# Set DM policy
+openclaw config set channels.telegram.dmPolicy pairing
+
+# Set per-account DM policy
+openclaw config set channels.telegram.accounts.engineer.dmPolicy allowlist
+
+# Add allowed user IDs
+openclaw config set channels.telegram.accounts.engineer.allowFrom '["123456789"]'
+```
+
+**pairing** (default, recommended):
+
+```json
+{
+  "channels": {
+    "telegram": {
+      "dmPolicy": "pairing"
+    }
+  }
+}
+```
+
+First time someone DMs your bot, it asks "who are you?" After pairing, bot remembers and responds normally.
+
+**open** — anyone can DM:
+
+```json
+{
+  "channels": {
+    "telegram": {
+      "dmPolicy": "open",
+      "allowFrom": ["*"]
+    }
+  }
+}
+```
+
+> **Warning:** anyone uses your API credits.
+
+**allowlist** — only specific users:
+
+```json
+{
+  "channels": {
+    "telegram": {
+      "dmPolicy": "allowlist",
+      "allowFrom": ["123456789", "987654321"]
+    }
+  }
+}
+```
+
+Only these Telegram user IDs can DM the bot. Everyone else is ignored.
+
+**disabled** — no DMs:
+
+```json
+{
+  "channels": {
+    "telegram": {
+      "dmPolicy": "disabled"
+    }
+  }
+}
+```
+
+Bot ignores all private messages. Only works in group channels.
+
+**Per-account example** (different policy per bot):
+
+```json
+{
+  "channels": {
+    "telegram": {
+      "dmPolicy": "pairing",
+      "accounts": {
+        "commander": {
+          "botToken": "TOKEN",
+          "dmPolicy": "pairing"
+        },
+        "engineer": {
+          "botToken": "TOKEN",
+          "dmPolicy": "allowlist",
+          "allowFrom": ["123456789"]
+        },
+        "thinktank": {
+          "botToken": "TOKEN",
+          "dmPolicy": "disabled"
+        }
+      }
+    }
+  }
+}
+```
+
+Commander open to pairing, Engineer restricted to one user, ThinkTank group-only.
