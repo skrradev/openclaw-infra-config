@@ -147,7 +147,42 @@ jq '
 ' ~/.openclaw/openclaw.json | sponge ~/.openclaw/openclaw.json
 ```
 
-## 10. Write Workspace Files
+## 10. Enable Agent-to-Agent Communication
+
+Two configs are needed for agent-to-agent mentions to work:
+
+| Config | Value | Why |
+|--------|-------|-----|
+| `session.agentToAgent.maxPingPongTurns` | `1` or `2` | Allows bot-to-bot message exchange (default `5`, set `0` to block) |
+| `channels.discord.accounts.<name>.allowBots` | `true` | Bots respond to other bot messages (default `false` — bots ignore each other) |
+
+**Both are required.** Without either one, agents can't talk to each other:
+
+| maxPingPongTurns | allowBots | Result |
+|------------------|-----------|--------|
+| `0` | `true` | Blocked by ping-pong limit |
+| `2` | `false` | Blocked by bot filter |
+| `2` | `true` | Works |
+
+```bash
+# Allow bot-to-bot messages (2 back-and-forth exchanges)
+jq '.session.agentToAgent.maxPingPongTurns = 2' ~/.openclaw/openclaw.json | sponge ~/.openclaw/openclaw.json
+
+# Allow each Discord bot to respond to other bots
+jq '
+  .channels.discord.accounts.commander.allowBots = true |
+  .channels.discord.accounts.strategist.allowBots = true |
+  .channels.discord.accounts.engineer.allowBots = true |
+  .channels.discord.accounts.creator.allowBots = true |
+  .channels.discord.accounts.thinktank.allowBots = true
+' ~/.openclaw/openclaw.json | sponge ~/.openclaw/openclaw.json
+```
+
+```bash
+openclaw gateway restart
+```
+
+## 11. Write Workspace Files
 
 Each workspace needs these files. Create them in `~/.openclaw/workspace-<agent>/`:
 
@@ -165,7 +200,7 @@ Each workspace needs these files. Create them in `~/.openclaw/workspace-<agent>/
 | `GROUP_MEMORY.md` | Group-safe memory (starts empty) | Yes |
 | `memory/` | Directory for daily logs | Yes |
 
-## 11. Restart and Verify
+## 12. Restart and Verify
 
 ```bash
 openclaw gateway restart
@@ -180,7 +215,7 @@ Should show:
 - Discord accounts: 5/5 — all `OK`
 - Agents: 6 total (main + 5)
 
-## 12. Test
+## 13. Test
 
 1. **Telegram DMs** — message each bot with "Who are you?" — each should respond with their role
 2. **Discord channel** — type a message — Commander should respond (global listener)
