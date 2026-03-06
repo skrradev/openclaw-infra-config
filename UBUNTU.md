@@ -117,6 +117,16 @@ ansible-playbook playbook-linux-ssh-lockdown.yml
 
 After lockdown, SSH to the server using the Tailscale IP and admin user.
 
+### Uninstall (Linux)
+
+Remove OpenClaw while keeping system infrastructure (Docker, Node.js, Tailscale, firewall rules, `openclaw` user):
+
+```bash
+ansible-playbook playbook-linux-uninstall.yml
+```
+
+This removes the systemd service, pnpm package, config directory (`~/.openclaw/`), Playwright cache, pnpm global store, and temp files. Re-run `playbook-linux.yml` to reinstall.
+
 ## 4. Post-Install
 
 Clean up the Ansible repo:
