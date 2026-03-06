@@ -27,6 +27,12 @@ Using `vars.yml` to pass variables:
 ansible-playbook playbook-linux.yml -e @vars.yml
 ```
 
+Install only OpenClaw (skip system setup):
+
+```bash
+ansible-playbook playbook-linux.yml --tags openclaw -e @vars.yml
+```
+
 ### Available Variables
 
 | Variable | Default | Description |
@@ -125,7 +131,7 @@ Remove OpenClaw while keeping system infrastructure (Docker, Node.js, Tailscale,
 ansible-playbook playbook-linux-uninstall.yml
 ```
 
-This removes the systemd service, pnpm package, config directory (`~/.openclaw/`), Playwright cache, pnpm global store, and temp files. Re-run `playbook-linux.yml` to reinstall.
+Run it the same way as the other playbooks — as root or with sudo. This removes the systemd service, pnpm package, config directory (`~/.openclaw/`), Playwright cache, pnpm global store, and temp files. Re-run `playbook-linux.yml` to reinstall.
 
 ## 4. Post-Install
 
