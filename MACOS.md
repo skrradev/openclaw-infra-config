@@ -6,6 +6,14 @@
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 ```
 
+Add Homebrew to your PATH:
+
+```bash
+echo >> ~/.zprofile
+echo 'eval "$(/opt/homebrew/bin/brew shellenv zsh)"' >> ~/.zprofile
+eval "$(/opt/homebrew/bin/brew shellenv zsh)"
+```
+
 Verify installation:
 
 ```bash
@@ -103,3 +111,24 @@ Update to latest:
 ```bash
 npm update -g openclaw
 ```
+
+## 7. Browser Settings
+
+On macOS, OpenClaw uses the real Chrome browser (not Playwright Chromium).
+
+```bash
+# Verify Chrome is installed
+ls "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+```
+
+```bash
+openclaw config set browser.executablePath "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" && \
+openclaw config set browser.enabled true && \
+openclaw config set browser.defaultProfile chrome
+```
+
+```bash
+openclaw gateway restart
+```
+
+> **Note:** On macOS with a display, `headless` and `noSandbox` are not needed (unlike Linux servers).
