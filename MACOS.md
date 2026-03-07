@@ -26,6 +26,18 @@ brew --version
 brew install node@22
 ```
 
+Link the `node` binary so it's available system-wide:
+
+```bash
+brew link node@22
+```
+
+If that conflicts with another Node version:
+
+```bash
+brew link --overwrite node@22
+```
+
 Add to PATH (if not automatic):
 
 ```bash

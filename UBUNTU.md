@@ -329,3 +329,42 @@ sudo tailscale logout
 # Check Tailscale service status
 sudo systemctl status tailscaled
 ```
+
+## 10. Fix: Tools Profile (OpenClaw 3.2+)
+
+OpenClaw 3.2 changed the default `tools.profile` to `messaging` after running `openclaw configure`. This means your agent can only send messages — `exec`, `read`, `write` are all disabled. Symptom: agent looks dead but isn't crashed, it just has no tools.
+
+Fix — restore full tool access:
+
+```bash
+openclaw config set tools.profile full
+```
+
+```json
+{
+  "tools": {
+    "profile": "full"
+  }
+}
+```
+
+If you also need `exec` to run without confirmation (Telegram and CLI don't show approval prompts):
+
+```bash
+openclaw config set tools.profile full && \
+openclaw config set tools.exec.security full && \
+openclaw config set tools.exec.ask off
+```
+
+```json
+{
+  "tools": {
+    "profile": "full",
+    "exec": { "security": "full", "ask": "off" }
+  }
+}
+```
+
+These are two separate systems. `profile` controls whether tools exist. `exec.security` controls whether commands need approval before running. Fixing `exec` without fixing `profile` first does nothing.
+
+> **Upgrading from an older version?** You're fine. Existing configs aren't overwritten — this only affects fresh installs.
