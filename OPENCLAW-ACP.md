@@ -1,4 +1,4 @@
-# OpenClaw ACP (Agent Communication Protocol) Setup
+# OpenClaw ACP (Agent Client Protocol) Setup
 
 ACP lets OpenClaw agents dispatch tasks to Claude and other AI backends. ACPX is the runtime bridge between OpenClaw and ACP-compatible models.
 
@@ -7,7 +7,78 @@ ACP lets OpenClaw agents dispatch tasks to Claude and other AI backends. ACPX is
 - Node.js installed and in PATH (`node`, `npm`)
 - OpenClaw installed and running
 
-## Required Config
+## 1. Install and Enable ACPX Plugin
+
+```bash
+openclaw plugins install @openclaw/acpx
+openclaw config set plugins.entries.acpx.enabled true
+```
+
+## 2. Enable ACP and Configure Backend
+
+```bash
+openclaw config set acp.enabled true && \
+openclaw config set acp.dispatch.enabled true && \
+openclaw config set acp.backend acpx && \
+openclaw config set acp.allowedAgents '["pi","claude","codex","opencode","gemini","kimi"]' && \
+openclaw config set acp.defaultAgent claude
+```
+
+```json
+{
+  "acp": {
+    "enabled": true,
+    "dispatch": { "enabled": true },
+    "backend": "acpx",
+    "allowedAgents": ["pi", "claude", "codex", "opencode", "gemini", "kimi"],
+    "defaultAgent": "claude"
+  }
+}
+```
+
+| Config | Description |
+|--------|-------------|
+| `acp.enabled` | Master switch for ACP |
+| `acp.dispatch.enabled` | Allow dispatching tasks to ACP agents |
+| `acp.backend` | Which plugin handles ACP calls (`acpx`) |
+| `acp.allowedAgents` | List of agent backends your OpenClaw can dispatch to |
+| `acp.defaultAgent` | Default agent when none is specified |
+
+Supported agents: `pi`, `claude` (Claude Code), `codex`, `opencode`, `gemini`, `kimi`.
+
+## 3. Set Non-Interactive Permissions
+
+Telegram and CLI don't show approval prompts, so write/exec tasks fail silently. Set permissions so ACP sessions can run without confirmation:
+
+```bash
+openclaw config set plugins.entries.acpx.config.permissionMode approve-all
+```
+
+`nonInteractivePermissions` defaults to `fail` already, so you only need to set `permissionMode`.
+
+```json
+{
+  "plugins": {
+    "entries": {
+      "acpx": {
+        "enabled": true,
+        "config": {
+          "permissionMode": "approve-all"
+        }
+      }
+    }
+  }
+}
+```
+
+| Config | Value | Description |
+|--------|-------|-------------|
+| `permissionMode` | `approve-all` | Auto-approve both reads and writes (default `approve-reads` blocks writes) |
+| `nonInteractivePermissions` | `fail` | Fail clearly instead of hanging (this is already the default) |
+
+> **Note:** `permissionMode` is plugin-level (global), not per-folder. To scope Claude to a specific directory, set the `cwd` in your prompts.
+
+## 4. Tools Config
 
 Three settings must be present in `~/.openclaw/openclaw.json`:
 
@@ -23,19 +94,7 @@ openclaw config set tools.sessions.visibility all && \
 openclaw config set tools.agentToAgent.enabled true
 ```
 
-```json
-{
-  "tools": {
-    "profile": "full",
-    "sessions": { "visibility": "all" },
-    "agentToAgent": { "enabled": true }
-  }
-}
-```
-
-### Optional: Exec Without Confirmation
-
-Telegram and CLI don't show approval prompts, so `exec` commands hang silently. To allow exec to run without confirmation:
+Optional — allow exec to run without confirmation:
 
 ```bash
 openclaw config set tools.exec.security full && \
@@ -55,97 +114,19 @@ openclaw config set tools.exec.ask off
 
 > **Note:** `profile` and `exec` are two separate systems. `profile` controls whether tools exist. `exec.security` controls whether commands need approval before running. Fixing `exec` without fixing `profile` first does nothing.
 
-## ACPX Permission Mode
-
-ACPX defaults to `permissionMode: approve-reads` — reads are auto-approved, writes require confirmation. In Telegram flow, write prompts can't be approved inline, so they fail silently.
-
-Set `approve-all` to auto-approve writes too:
-
-```bash
-openclaw config set plugins.entries.acpx.config.permissionMode '"approve-all"'
-```
-
-```json
-{
-  "plugins": {
-    "entries": {
-      "acpx": {
-        "enabled": true,
-        "config": {
-          "command": "~/.openclaw/acpx-wrapper.sh",
-          "expectedVersion": "0.1.15",
-          "permissionMode": "approve-all"
-        }
-      }
-    }
-  }
-}
-```
-
-| Mode | Reads | Writes | Use case |
-|------|-------|--------|----------|
-| `approve-reads` | Auto | Ask | Default — safe but breaks Telegram/CLI |
-| `approve-all` | Auto | Auto | Telegram, CLI, headless — no prompts |
+## 5. Restart and Verify
 
 ```bash
 openclaw gateway restart
 ```
 
-> **Note:** `permissionMode` is plugin-level (global), not per-folder. To scope Claude to a specific directory, set the `cwd` in your prompts (e.g. `/Users/fastclaws/projects/my-app`).
-
-## ACPX Wrapper
-
-OpenClaw uses a wrapper script to invoke ACPX:
+In chat, run the ACP doctor to verify everything is wired up:
 
 ```
-~/.openclaw/acpx-wrapper.sh
+/acp doctor
 ```
 
-```bash
-#!/bin/sh
-exec /opt/homebrew/opt/node@22/bin/node /opt/homebrew/lib/node_modules/acpx/dist/cli.js "$@"
-```
-
-The path to `node` depends on your installation:
-
-| Platform | Node path |
-|----------|-----------|
-| macOS (Homebrew) | `/opt/homebrew/opt/node@22/bin/node` |
-| Linux (nvm) | `~/.nvm/versions/node/v22.*/bin/node` |
-| Linux (system) | `/usr/bin/node` |
-
-Make sure the wrapper points to a valid Node binary:
-
-```bash
-# Check if wrapper exists and is executable
-cat ~/.openclaw/acpx-wrapper.sh
-ls -la ~/.openclaw/acpx-wrapper.sh
-
-# Verify Node is accessible from the wrapper path
-node --version
-```
-
-## ACPX Version
-
-OpenClaw extensions expect a specific pinned ACPX version. Currently: **0.1.15**
-
-ACPX is installed at:
-
-```
-/opt/homebrew/lib/node_modules/openclaw/extensions/acpx
-```
-
-To check the installed version:
-
-```bash
-node /opt/homebrew/lib/node_modules/acpx/dist/cli.js --version
-```
-
-To reinstall the pinned version:
-
-```bash
-npm install -g acpx@0.1.15
-```
+A healthy setup shows `healthy: yes` and `runtimeDoctor: ok` in the doctor output.
 
 ## Troubleshooting
 
@@ -162,7 +143,7 @@ openclaw gateway restart
 
 ### Symptom: ACPX backend calls failing
 
-**Cause:** Node binary missing or ACPX not installed at expected version.
+**Cause:** Node binary missing or ACPX not installed.
 
 **Fix:**
 
@@ -170,13 +151,10 @@ openclaw gateway restart
 # 1. Ensure Node is installed
 node --version || brew install node
 
-# 2. Reinstall ACPX at pinned version
-npm install -g acpx@0.1.15
+# 2. Reinstall ACPX plugin
+openclaw plugins install @openclaw/acpx
 
-# 3. Verify wrapper script
-cat ~/.openclaw/acpx-wrapper.sh
-
-# 4. Restart gateway
+# 3. Restart gateway
 openclaw gateway restart
 ```
 
@@ -192,26 +170,60 @@ openclaw config set tools.agentToAgent.enabled true
 openclaw gateway restart
 ```
 
-### Quick Smoke Test
+### Symptom: Write/exec tasks fail silently
 
-After fixing, verify ACP is working:
+**Cause:** `permissionMode` is `approve-reads` (default). Writes need approval but Telegram/CLI can't show prompts.
+
+**Fix:**
 
 ```bash
-openclaw gateway status
+openclaw config set plugins.entries.acpx.config.permissionMode approve-all && \
+openclaw config set plugins.entries.acpx.config.nonInteractivePermissions fail
+openclaw gateway restart
 ```
-
-Run a test ACP dispatch — a successful run returns `VERIFIED` or `CLAUDE_OK`.
 
 ## Repair Checklist
 
 If ACP stops working, go through this list:
 
 1. **Node in PATH?** — `node --version`
-2. **ACPX at pinned version?** — `node /opt/homebrew/lib/node_modules/acpx/dist/cli.js --version` (expect `0.1.15`)
-3. **Wrapper script valid?** — `cat ~/.openclaw/acpx-wrapper.sh` (points to real Node binary)
-4. **Config correct?** — `openclaw config get tools` (profile: full, sessions.visibility: all, agentToAgent.enabled: true)
-5. **Gateway running?** — `openclaw gateway status`
-6. **Restart** — `openclaw gateway restart`
-7. **Smoke test** — run ACP dispatch, expect `VERIFIED`
+2. **ACPX plugin installed?** — `openclaw plugins list`
+3. **ACP enabled?** — `openclaw config get acp` (enabled: true, dispatch.enabled: true, backend: acpx)
+4. **Tools config correct?** — `openclaw config get tools` (profile: full, sessions.visibility: all, agentToAgent.enabled: true)
+5. **Permission mode?** — `openclaw config get plugins.entries.acpx` (permissionMode: approve-all)
+6. **Gateway running?** — `openclaw gateway status`
+7. **Restart** — `openclaw gateway restart`
+8. **Smoke test** — `/acp doctor` in chat, expect `healthy: yes`
+
+## Full Config Reference
+
+```json
+{
+  "acp": {
+    "enabled": true,
+    "dispatch": { "enabled": true },
+    "backend": "acpx",
+    "allowedAgents": ["pi", "claude", "codex", "opencode", "gemini", "kimi"],
+    "defaultAgent": "claude"
+  },
+  "plugins": {
+    "entries": {
+      "acpx": {
+        "enabled": true,
+        "config": {
+          "permissionMode": "approve-all",
+          "nonInteractivePermissions": "fail"
+        }
+      }
+    }
+  },
+  "tools": {
+    "profile": "full",
+    "sessions": { "visibility": "all" },
+    "agentToAgent": { "enabled": true },
+    "exec": { "security": "full", "ask": "off" }
+  }
+}
+```
 
 > **Upgrading from an older version?** Existing configs aren't overwritten — this mainly affects fresh installs where `openclaw configure` sets `tools.profile` to `messaging`.
