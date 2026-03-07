@@ -184,12 +184,15 @@ openclaw config set gateway.tailscale.mode serve && \
 openclaw config set gateway.bind loopback && \
 openclaw config set gateway.tailscale.resetOnExit true && \
 openclaw config set gateway.auth.allowTailscale true && \
+openclaw config set gateway.controlUi.allowedOrigins '["*"]' && \
 openclaw config set commands.restart true
 ```
 
 ```bash
 openclaw gateway restart
 ```
+
+> **Breaking change (2026.3.1+):** Since commit `223d7dc23` (Feb 24, 2026), the gateway requires explicit `allowedOrigins` for non-localhost Control UI connections. Tailscale serve proxies through a non-localhost origin, so without this setting the Control UI will be blocked. Versions up to 2026.2.17 are not affected. Set `gateway.controlUi.allowedOrigins` to `["*"]` to allow all origins, or list specific Tailscale hostnames.
 
 
 ## 6. Browser Settings

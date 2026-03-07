@@ -44,6 +44,9 @@ openclaw config set commands.restart true
 | `gateway.auth.allowTailscale` | `false` | Allow Tailscale-authenticated connections without token |
 | `gateway.tailscale.mode` | `""` | Set to `serve` to proxy HTTPS through your tailnet |
 | `gateway.tailscale.resetOnExit` | `false` | Clean up tailscale serve when gateway stops |
+| `gateway.controlUi.allowedOrigins` | `[]` | Non-localhost origins allowed to connect to Control UI (e.g. `["*"]`) |
+
+> **Breaking change (2026.3.1+):** Since commit `223d7dc23` (Feb 24, 2026), non-localhost origins must be explicitly listed in `gateway.controlUi.allowedOrigins`. Before this, any origin matching the Host header was allowed. Tailscale serve uses a non-localhost origin, so you must set this or the Control UI will be blocked. Versions up to 2026.2.17 are not affected. Wildcard `"*"` support was added Mar 2.
 
 ```bash
 # Allow Tailscale-authenticated connections (no token needed from tailnet peers)
@@ -54,6 +57,9 @@ openclaw config set gateway.tailscale.mode serve
 
 # Clean up tailscale serve when gateway stops
 openclaw config set gateway.tailscale.resetOnExit true
+
+# Allow Control UI from non-localhost origins (required for Tailscale serve in 2026.3.1+)
+openclaw config set gateway.controlUi.allowedOrigins '["*"]'
 ```
 
 ```json
@@ -65,6 +71,9 @@ openclaw config set gateway.tailscale.resetOnExit true
     "tailscale": {
       "mode": "serve",
       "resetOnExit": true
+    },
+    "controlUi": {
+      "allowedOrigins": ["*"]
     }
   }
 }
