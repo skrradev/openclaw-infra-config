@@ -128,6 +128,98 @@ In chat, run the ACP doctor to verify everything is wired up:
 
 A healthy setup shows `healthy: yes` and `runtimeDoctor: ok` in the doctor output.
 
+## 6. ACP Bindings
+
+Bindings route messages from a specific channel/topic to a persistent ACP agent session. Without a binding, ACP is only available via `/acp` commands. With a binding, every message in that channel or topic automatically goes to the configured ACP agent.
+
+Each binding has:
+
+| Field | Description |
+|-------|-------------|
+| `type` | Must be `"acp"` |
+| `agentId` | Which ACP agent handles messages (e.g. `claude`, `codex`, `gemini`) |
+| `match` | Identifies the target conversation (channel, account, peer) |
+| `acp.cwd` | Working directory for the ACP session (optional) |
+| `acp.mode` | `"persistent"` (default) or `"oneshot"` (optional) |
+| `acp.label` | Session label for identification (optional) |
+
+### Match patterns
+
+**Telegram forum topic:**
+
+```
+match.channel = "telegram"
+match.accountId = "default"
+match.peer.kind = "group"
+match.peer.id = "<chatId>:topic:<topicId>"
+```
+
+**Discord channel or thread:**
+
+```
+match.channel = "discord"
+match.peer.id = "<channelOrThreadId>"
+```
+
+### Example: Bind a Telegram topic to Claude
+
+```bash
+# Create binding at index 0
+openclaw config set 'bindings[0].type' 'acp'
+openclaw config set 'bindings[0].agentId' 'claude'
+
+# Match a Telegram forum topic
+openclaw config set 'bindings[0].match.channel' 'telegram'
+openclaw config set 'bindings[0].match.accountId' 'default'
+openclaw config set 'bindings[0].match.peer.kind' 'group'
+openclaw config set 'bindings[0].match.peer.id' '-1003857598570:topic:71'
+
+# Set working directory for this ACP session
+openclaw config set 'bindings[0].acp.cwd' '/Users/fastclaws/projects/my-app'
+
+# Validate and restart
+openclaw config validate
+openclaw gateway restart
+```
+
+> **Note:** If you already have other bindings, use `bindings[1]`, `bindings[2]`, etc. to avoid overwriting existing ones.
+
+```json
+{
+  "bindings": [
+    {
+      "type": "acp",
+      "agentId": "claude",
+      "match": {
+        "channel": "telegram",
+        "accountId": "default",
+        "peer": {
+          "kind": "group",
+          "id": "-1003857598570:topic:71"
+        }
+      },
+      "acp": {
+        "cwd": "/Users/fastclaws/projects/my-app"
+      }
+    }
+  ]
+}
+```
+
+### Override precedence
+
+When multiple configuration levels exist:
+
+1. `bindings[].acp.*` settings (highest priority)
+2. `agents.list[].runtime.acp.*` defaults
+3. Global ACP defaults (lowest priority)
+
+### Behavior
+
+- Messages in the bound channel/topic route directly to the ACP session
+- `/new` and `/reset` commands reset the same ACP session in place (don't create new sessions)
+- Sessions remain active until unfocused, closed, archived, or expired by idle/max-age timeout
+
 ## Troubleshooting
 
 ### Symptom: Agent looks dead but isn't crashed
