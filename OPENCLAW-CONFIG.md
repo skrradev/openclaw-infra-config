@@ -234,6 +234,107 @@ openclaw dashboard --no-open
 openclaw config get gateway.auth.token
 ```
 
+## Telegram Group Setup
+
+Three things must be configured for the bot to work in Telegram groups.
+
+### 1. Set group policy
+
+```bash
+openclaw config set channels.telegram.groupPolicy allowlist
+```
+
+| Value | Behavior |
+|-------|----------|
+| `allowlist` | Only registered groups + user IDs in `groupAllowFrom` can talk **(recommended)** |
+| `open` | Everyone can talk to the bot |
+| `pairing` | Only users who paired via DM can talk |
+| `disabled` | Bot ignores all group messages |
+
+**`allowlist` requires two checks to pass:**
+
+1. **Chat-level** — Is this group registered in the `groups` config?
+2. **Sender-level** — Is this person's user ID in `groupAllowFrom`?
+
+If the group isn't registered, the chat-level check fails before it even checks your user ID. You need **both**:
+
+```bash
+# Register the group (also disables @mention requirement)
+openclaw config set 'channels.telegram.groups.-100XXXXXXXXXX.requireMention' false
+
+# AND add your user ID to groupAllowFrom
+openclaw config set channels.telegram.groupAllowFrom '["305695524"]'
+```
+
+### 2. Allow yourself to run admin commands
+
+```bash
+openclaw config set channels.telegram.allowFrom '["YOUR_TELEGRAM_USER_ID"]'
+```
+
+Get your user ID by messaging `@userinfobot` on Telegram. This is a **positive number** (e.g. `305695524`), not a group ID.
+
+Without this, commands like `/activation`, `/status`, `/acp` will return "You are not authorized."
+
+### 3. Disable @mention requirement (optional)
+
+**Option A** — from chat (per-session, doesn't survive restart):
+
+```
+/activation always
+```
+
+**Option B** — from config (permanent, per-group):
+
+```bash
+openclaw config set 'channels.telegram.groups.<GROUP_ID>.requireMention' false
+```
+
+### 4. Restart
+
+```bash
+openclaw gateway restart
+```
+
+### 5. Telegram BotFather setting
+
+In `@BotFather` → your bot → **Bot Settings** → **Group Privacy** → **Turn off** (`/setprivacy` → Disable).
+
+Without this, Telegram itself filters out non-mention messages before they reach OpenClaw.
+
+### Common mistakes
+
+| Mistake | Symptom |
+|---------|---------|
+| Group ID in `allowFrom` or `groupAllowFrom` | "Invalid allowFrom entry" warning in logs. Use **user IDs** (positive numbers), not group IDs |
+| Group not registered in `groups` config | "not-allowed" / "This group is not allowed" — chat-level check fails before sender check |
+| Missing `groupAllowFrom` | Messages silently dropped even though group is registered |
+| Missing `allowFrom` | "You are not authorized to use this command" for admin commands |
+| Didn't restart gateway after config change | Old config still active |
+| BotFather Group Privacy is ON | Bot only sees @mentions regardless of config |
+
+### Config reference
+
+```json
+{
+  "channels": {
+    "telegram": {
+      "enabled": true,
+      "dmPolicy": "pairing",
+      "groupPolicy": "allowlist",
+      "allowFrom": ["305695524"],
+      "groupAllowFrom": ["305695524"],
+      "streaming": "partial",
+      "groups": {
+        "-1003857598570": {
+          "requireMention": false
+        }
+      }
+    }
+  }
+}
+```
+
 ## DM Policy (Telegram)
 
 Controls who can message your bot via DM.
